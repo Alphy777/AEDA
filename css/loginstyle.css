@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+*{
+	margin:0;
+	padding:0;
+	box-sizing: border-box;
+}   
+body {
+    margin: 0;
+    overflow-x: hidden;
+    display: flex;
+    background-color: black;
+       
+}
+/* Background Image */
+.hero{
+    background-image:url(../images/earth-login.jpg) ;
+    background-size: cover;
+    background-position: center;
+    width: auto;
+    height: 100%;
+    padding-top: 4.5rem;
+}
+.hero2{
+    background-image:url(../images/earth-register.jpg) ;
+    background-size: cover;
+    background-position: center;
+    width: auto;
+    height: 100%;
+    padding-top: 4.5rem;
+}
+.hero p,.hero2 p{
+    font-size: 2.5em;
+    font-weight: bolder;
+    color: aliceblue;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* page slide begins*/
+.page {
+    position: fixed;
+    width: 100%;
+    height: 100vh;
+    top: 0;
+    left: 100%; /* Start off-screen to the right */
+    background-color: white;
+    transition: transform 0.5s ease-in-out;
+}
+
+.active {
+    left: 0;
+    transform: translateX(0); /* The active page is in the viewport */
+}
+
+.slide-out {
+    transform: translateX(-100%); /* Slide out to the left */
+}
+
+.slide-in {
+    left: 0;
+    transform: translateX(100%); /* Start off-screen to the right */
+}
+/* page slide ends */
+
+/* button */
+.form-container {
+  width: 400px;
+  margin: auto 45em;
+  padding: 2rem;
+  color: rgba(243, 244, 246, 1);
+  background-color: transparent;
+  backdrop-filter: blur(20px);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(55, 65, 81, 1);
+  
+}
+.form-container2 {
+    width: 400px;
+    margin: auto 5em;
+    padding: 2rem;
+    color: rgba(243, 244, 246, 1);
+    background-color: transparent;
+    backdrop-filter: blur(20px);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(55, 65, 81, 1);
+  }
+
+.title {
+  text-align: center;
+  font-size: 1.5rem;
+  /* line-height: 2rem; */
+  font-weight: 700;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+
+.input-group {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.input-group label {
+  display: block;
+  color: rgb(255, 255, 255);
+  margin-bottom: 4px;
+}
+
+.input-group input {
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(55, 65, 81, 1);
+  outline: 0;
+  background-color: transparent;
+  padding: 0.75rem 1rem;
+  color: rgba(243, 244, 246, 1);
+}
+
+.input-group input:focus {
+  border-color: rgb(67, 20, 208);
+}
+
+.forgot {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(156, 163, 175,1);
+  margin: 8px 0 14px 0;
+}
+
+.forgot a{
+  color: rgba(243, 244, 246, 1);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.forgot a:hover {
+  color:rgb(20, 79, 216);
+}
+
+.sign {
+  display: block;
+  width: 100%;
+  background-color: transparent;
+  padding: 0.75rem;
+  text-align: center;
+  border: 1px solid rgba(55, 65, 81, 1);
+  color: white;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+.sign:hover{
+    background: rgb(49, 78, 223);
+}

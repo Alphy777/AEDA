@@ -13,6 +13,7 @@ html,body{
 }
 /* Background Image */
 .hero{
+  overflow: hidden;
     background-image:url(../images/earth-bg.jpeg) ;
     background-size: cover;
     background-position: center;

@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Josefin+Sans&display=swap');
+
+
+*{
+	margin:0;
+	padding:0;
+	box-sizing: border-box;
+}   
+body{
+    background: #fefefe;
+    scroll-behavior: smooth;
+    width: 100%;
+    height: 100%;
+}
+.sidebar{
+    border-right: 2px solid rgba(128, 128, 128, 0.575);
+    color: #000000;
+    background: rgb(255, 254, 254);
+    position: fixed;
+    width: 13em;
+    height: 100%;
+  
+  }
+  .sidebar h2{
+    margin: .33em 0 0.54rem;
+    text-align: center;
+    font-family: 'Bebas Neue';
+    font-style: bold;
+    font-size: 4rem;
+  }
+  .sidebar ul li{
+    font-size: 1em;
+    font-family: 'Josefin Sans', sans-serif;
+    list-style: none ;
+    padding: .623em;
+  }
+  .sidebar ul span li {
+    font-size: 1.5em;
+    padding: 0.0000em;
+  }
+  .sidebar a{
+    text-decoration: none;
+    color: #000000cb;
+  }

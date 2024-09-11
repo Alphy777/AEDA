@@ -1,80 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>AEDA</title>
-    <link rel="icon" href="images/INDBRITZ Logo Final (without-text).png">
-  
-    
-    <!-- bootstrap CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-    <!-- font awesome style -->
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-    <!-- animation style -->
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
-    <!-- Custom styles -->
-    <link href="css/loginstyle.css" rel="stylesheet" type="text/css"/>
-    <!-- ajax jquery library -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-
-  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEDA-Login/Sign-up</title>
+  <link rel="stylesheet" href="css/loginstyle.css">
 </head>
 <body>
-    <audio id="transition-sound" src="sounds/slide-click.mp3" preload="auto"></audio>
-
-    <div class="hero page active" id="page-1">
-        <div class="form-container" data-aos="zoom-in-up"> 
-            <p class="title">Login</p>
-            <form class="form">
-                <div class="input-group">
-                    <label for="log-mail">Email</label>
-                    <input type="email" name="log-mail" id="log-mail" placeholder="Email Id">
-                </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" name="password" id="password" placeholder="Password">
-                </div>
-                <button class="sign" style="margin-top: 0.985rem;">Sign in</button>
-                <div class="forgot">
-                    <a href="#">Forgot Password?</a>
-                    <a href="#" onclick="loadPage('page-2')">Create a new account!</a>
-                </div>
-            </form>
-        </div>        
-    </div>
-    
-    <div class="hero2 page" id="page-2">
-        <div class="form-container2" data-aos="zoom-in-up"> 
-            <p class="title">Register Now</p>
-            <form class="form">
-                <div class="input-group">
-                    <label for="reg-mail">Email</label>
-                    <input type="email" name="reg-mail" id="reg-mail" placeholder="Email">
-                </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" name="password" id="password" placeholder="Password">
-                </div>
-                <button class="sign" style="margin-top: 0.985rem;">Sign up</button>
-                <div class="forgot">
-                    <a href="#" onclick="loadPage('page-1')">Already have an account?</a>
-                </div>
-            </form>
-        </div>        
+  <div class="container" id="container">
+    <!-- Login Section -->
+    <div class="form-container login-container">
+      <form id="aeda-form" action="#">
+        <h1>Login Now</h1>
+        <input type="email" placeholder="Email" required />
+        <input type="password" placeholder="Password" required />
+        <button type="submit">Sign In</button>
+        <a href="#">Forgot your password?</a>
+      </form>
     </div>
 
-    <!-- script begins here -->
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
-    <script>
-      AOS.init();
-    </script>
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script src="https://kit.fontawesome.com/6d286a1171.js" crossorigin="anonymous"></script>
-    <script src="js/main.js"></script>
-    <!-- script ends here -->
+    <!-- Sign Up Section -->
+    <div class="form-container sign-up-container">
+      <form id="aeda-form" action="#">
+        <h1>Register Now</h1>
+        <input type="email" placeholder="Email" required />
+        <input type="password" placeholder="Password" required />
+        <input type="password" placeholder="Re-enter password" required />
+        <button type="submit">Sign Up</button>
+      </form>
+    </div>
 
+    <!-- Overlay Section -->
+    <div class="overlay-container">
+      <div class="overlay">
+        <div class="overlay-panel overlay-left">
+          <h1>Do you have an account already?</h1>
+          <p>Click the button to log in.</p>
+          <button class="ghost" id="signIn">Sign In</button>
+        </div>
+        <div class="overlay-panel overlay-right">
+          <h1>Hey there, are you new here?</h1>
+          <p>Click the button to register.</p>
+          <button class="ghost" id="signUp">Sign Up</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
 </body>
 </html>

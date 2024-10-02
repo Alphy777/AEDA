@@ -169,3 +169,20 @@ input[type="text"]:focus{
   text-decoration: none;
   color: #ffffff;
 }
+
+.mail-section{
+  border: 1.5px solid #ffffffc0;
+  border-radius: 20px;
+  width: 100%;
+  height: 85%;
+  text-align: center;
+}
+/* Only show the section with the 'active' class */
+.inbox-section, .send-section {
+  display: none;
+}
+
+.inbox-section.active, .send-section.active {
+  display: block;
+  padding-top: 15%; /* Remove after connecting. just did for beautifying */
+}

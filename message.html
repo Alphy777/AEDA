@@ -27,14 +27,14 @@
             <div class="col-md-2">
                 <div class="sidebar">
                     <h2>AEDA</h2>
-                    <ul>
+                    <ul class="tabs">
                         <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
-                        <li><a href="#"><i class="fa-solid fa-message"></i> Inbox</a></li>
-                        <li><a href="#"><i class="fa-solid fa-message"></i> Send</a></li>
+                        <li><a href="#" id="inboxTab"><i class="fa-solid fa-message"></i> Inbox</a></li>
+                        <li><a href="#" id="sendTab"><i class="fa-solid fa-message"></i> Send</a></li>
                         <li><a href="#"><i class="fa-solid fa-user-gear"></i> Settings</a></li>
                         <li><a href="#"><i class="fa fa-phone"></i> Support</a></li>
                         <br><br><br>
-                        <span><li><a href="profile.html"><i class="fa-regular fa-user"></i> Profile</a></li></span>
+                        <span><li><a href="#"><i class="fa-regular fa-user"></i> Profile</a></li></span>
                     </ul>
                 </div>
             </div>
@@ -57,6 +57,15 @@
                             <a href="#"><i class="fa-solid fa-square-plus"></i> COMPOSE</a>
                         </div>
                     </div>
+                    <br>
+                    <div class="mail-section">
+                        <div class="inbox-section"> <!-- Default section with class 'active' -->
+                          <h3>No Mails Received</h3>
+                        </div>
+                        <div class="send-section"> <!-- Send section initially hidden -->
+                          <h3>No Mails Send</h3>
+                        </div>
+                      </div>
                 </div>
             </div>
         </div>
@@ -67,6 +76,7 @@
     <script>
       AOS.init();
     </script>
+    <script src="js/main.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script src="https://kit.fontawesome.com/6d286a1171.js" crossorigin="anonymous"></script>

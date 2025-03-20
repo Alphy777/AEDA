@@ -265,6 +265,13 @@ input[type="text"]:focus{
   cursor: pointer;
 }
 
+.selected-message {
+  background-color: #f0f0f0; /* Light gray background */
+  border-left: 5px solid #007bff; /* Blue highlight */
+  padding: 5px;
+  cursor: pointer;
+}
+
 .chat-button:hover {
   background-color: #0056b3;
 }

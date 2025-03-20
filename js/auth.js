@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const signupForm = document.getElementById("signup-form");
     const logoutBtn = document.getElementById("logout-btn");
 
-
     function setupPasswordToggle(inputId, toggleId) {
         const input = document.getElementById(inputId);
         const toggle = document.getElementById(toggleId);
@@ -60,6 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 let result = await response.json();
                 if (response.ok) {
                     alert(result.status);
+                    localStorage.setItem(`public_key_${username}`, result.public_key); // Store public key
                     window.location.href = "login.html";
                 } else {
                     alert(result.error);
@@ -89,6 +89,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 let result = await response.json();
                 if (result.status === "Login successful") {
                     localStorage.setItem("username", result.username);
+
+                    let keyResponse = await fetch(`http://127.0.0.1:5000/get-public-key/${username}`);
+                    let keyData = await keyResponse.json();
+                    if (keyResponse.ok) {
+                        localStorage.setItem(`public_key_${username}`, keyData.public_key);
+                    }
+
                     window.location.href = "message.html";
                 } else {
                     alert(result.error);
@@ -118,14 +125,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     body: JSON.stringify({ username })
                 });
 
-                let result = await response.json();
-                
                 if (response.ok) {
-                    // Only remove the current user's session
-                    if (localStorage.getItem("username") === username) {
-                        localStorage.removeItem("username");
-                        window.location.href = "login.html";
-                    }
+                    localStorage.removeItem("username");
+                    localStorage.removeItem(`public_key_${username}`);
+                    window.location.href = "login.html";
                 } else {
                     alert("Logout failed. Please try again.");
                 }

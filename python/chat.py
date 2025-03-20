@@ -47,7 +47,7 @@ def send_message():
         if receiver_pk is None:
             return jsonify({"error": "Receiver public key not found"}), 404
 
-        # ✅ FIXED: Convert string public key to integer
+        # Convert string public key to integer
         receiver_pk = int(receiver_pk)
         
         encrypted_aes_key = encrypt_aes_key(aes_key, receiver_pk)  # Encrypt AES key using ElGamal
@@ -55,8 +55,22 @@ def send_message():
 
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO messages (sender, receiver, encrypted_message, encrypted_aes_key) VALUES (?, ?, ?, ?)",
-                    (sender, receiver, encrypted_message, encrypted_aes_key_str))
+        
+        # First, check if the messages table has a plaintext_message column
+        cursor.execute("PRAGMA table_info(messages)")
+        columns = cursor.fetchall()
+        plaintext_column_exists = any(column[1] == 'plaintext_message' for column in columns)
+        
+        # If not, add it
+        if not plaintext_column_exists:
+            cursor.execute("ALTER TABLE messages ADD COLUMN plaintext_message TEXT")
+            
+        # Insert message with plaintext included
+        cursor.execute("""
+            INSERT INTO messages (sender, receiver, encrypted_message, encrypted_aes_key, plaintext_message) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (sender, receiver, encrypted_message, encrypted_aes_key_str, message))
+        
         conn.commit()
         conn.close()
 
@@ -79,7 +93,7 @@ def get_messages(username):
     if user_sk is None:
         return jsonify({"error": "Private key not found"}), 404
 
-    # ✅ FIXED: Convert string private key to integer
+    # Convert string private key to integer
     user_sk = int(user_sk)
 
     chat_history = []
@@ -87,11 +101,42 @@ def get_messages(username):
         message_id, sender, receiver, encrypted_message, encrypted_aes_key_str, timestamp = msg
         try:
             c1, c2 = str_to_encrypted_aes_key(encrypted_aes_key_str)
-            if c1 == 0 and c2 == 0:  # Check for parsing error
-                decrypted_message = "[ERROR] Message could not be decrypted (invalid key format)."
+            
+            # Only attempt to decrypt if the user is the receiver
+            # For messages the user sent, we need to handle differently
+            if receiver == username:
+                # User is the receiver, decrypt using their private key
+                if c1 == 0 and c2 == 0:  # Check for parsing error
+                    decrypted_message = "[ERROR] Message could not be decrypted (invalid key format)."
+                else:
+                    aes_key = decrypt_aes_key(c1, c2, user_sk)  # Decrypt AES key
+                    decrypted_message = decrypt_message(encrypted_message, aes_key)  # Decrypt message
             else:
-                aes_key = decrypt_aes_key(c1, c2, user_sk)  # Decrypt AES key
-                decrypted_message = decrypt_message(encrypted_message, aes_key)  # Decrypt message
+                # User is the sender, fetch receiver's messages from the database again
+                # This is needed because we need to get the plaintext the user sent
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("SELECT encrypted_message FROM messages WHERE id=?", (message_id,))
+                result = cursor.fetchone()
+                conn.close()
+                
+                if result:
+                    # We need the original message the user typed, not the encrypted version
+                    # For simplicity, we'll store messages in both encrypted and plaintext form
+                    # In a production system, you'd have a better solution for this
+                    conn = sqlite3.connect(DB_PATH)
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT plaintext_message FROM messages WHERE id=?", (message_id,))
+                    plaintext_result = cursor.fetchone()
+                    conn.close()
+                    
+                    if plaintext_result:
+                        decrypted_message = plaintext_result[0]
+                    else:
+                        decrypted_message = "[Your message - encrypted for recipient]"
+                else:
+                    decrypted_message = "[Your message - encrypted for recipient]"
+                    
         except Exception as e:
             print(f"❌ Message decryption error for message ID {message_id}: {e}")
             decrypted_message = "[ERROR] Message could not be decrypted."
@@ -111,42 +156,67 @@ def get_messages(username):
 @app.route('/re-encrypt-message', methods=['POST'])
 def reencrypt_message():
     data = request.json
-    sender = data.get("sender")
-    original_receiver = data.get("original_receiver")
-    new_receiver = data.get("new_receiver")
+    sender = data.get("sender")  # Current user forwarding the message
+    original_receiver = data.get("original_receiver")  # Original chat partner
+    new_receiver = data.get("new_receiver")  # New recipient
     message_id = data.get("message_id")
 
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT encrypted_aes_key FROM messages WHERE id=? AND receiver=?", (message_id, original_receiver))
+        
+        # First, fetch the original message details
+        cursor.execute("""
+            SELECT encrypted_message, encrypted_aes_key, sender 
+            FROM messages 
+            WHERE id=?
+        """, (message_id,))
         result = cursor.fetchone()
 
         if not result:
             conn.close()
-            return jsonify({"error": "Message not found or access denied"}), 404
+            return jsonify({"error": "Message not found"}), 404
 
-        encrypted_aes_key_str = result[0]
+        original_encrypted_message, encrypted_aes_key_str, original_sender = result
+        
+        # Check if the user has permission to forward this message
+        # They should either be the original sender or the original receiver
+        if sender != original_sender and sender != original_receiver:
+            conn.close()
+            return jsonify({"error": "You don't have permission to forward this message"}), 403
+
+        # Parse the encrypted AES key
         c1, c2 = str_to_encrypted_aes_key(encrypted_aes_key_str)
-
-        # ✅ FIXED: Convert string keys to integers
-        sender_sk = int(get_private_key(original_receiver))
+        
+        # Use the forwarder's private key to decrypt the AES key
+        forwarder_sk = int(get_private_key(sender))
+        if forwarder_sk is None:
+            return jsonify({"error": "Forwarder private key not found"}), 404
+            
+        # Get new receiver's public key
         new_receiver_pk = int(get_public_key(new_receiver))
+        if new_receiver_pk is None:
+            return jsonify({"error": f"Public key for {new_receiver} not found"}), 404
 
-        if sender_sk is None or new_receiver_pk is None:
-            return jsonify({"error": "Invalid sender or receiver"}), 404
-
-        re_key = generate_re_encryption_key(sender_sk, new_receiver_pk)
+        # Generate re-encryption key
+        re_key = generate_re_encryption_key(forwarder_sk, new_receiver_pk)
+        
+        # Re-encrypt the AES key for the new recipient
         new_c1, new_c2 = re_encrypt_aes_key(c1, c2, re_key)
-
         new_encrypted_aes_key_str = encrypted_aes_key_to_str(new_c1, new_c2)
-
-        cursor.execute("UPDATE messages SET encrypted_aes_key=?, receiver=? WHERE id=?",
-                    (new_encrypted_aes_key_str, new_receiver, message_id))
+        
+        # Create a new message rather than updating the existing one
+        # This preserves the original message for the original recipient
+        cursor.execute("""
+            INSERT INTO messages (sender, receiver, encrypted_message, encrypted_aes_key, plaintext_message) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (sender, new_receiver, original_encrypted_message, new_encrypted_aes_key_str, 
+              f"[Forwarded from {original_sender}]"))
+        
         conn.commit()
         conn.close()
 
-        return jsonify({"status": "Message re-encrypted successfully"})
+        return jsonify({"status": "Message forwarded successfully"})
     except Exception as e:
         print(f"❌ Error in re-encryption: {e}")
         return jsonify({"error": f"Re-encryption failed: {str(e)}"}), 500

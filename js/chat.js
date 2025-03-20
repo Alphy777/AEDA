@@ -78,15 +78,27 @@ document.addEventListener("DOMContentLoaded", function () {
         fetch("http://127.0.0.1:5000/active-users")
             .then(response => response.json())
             .then(users => {
+                // Filter out the current user and the current chat partner
+                const eligibleUsers = users.filter(user => 
+                    user !== username && user !== selectedUser);
+                    
+                if (eligibleUsers.length === 0) {
+                    alert("No other active users available to forward to.");
+                    return;
+                }
+                
                 let userList = "Select a user to forward the message:\n";
-                users.forEach(user => {
-                    if (user !== username) {
-                        userList += `👉 ${user}\n`;
-                    }
+                eligibleUsers.forEach(user => {
+                    userList += `👉 ${user}\n`;
                 });
+                
                 let newRecipient = prompt(userList);
-                if (newRecipient) {
+                
+                // Validate that the entered user exists and is active
+                if (newRecipient && eligibleUsers.includes(newRecipient)) {
                     forwardMessage(newRecipient);
+                } else if (newRecipient) {
+                    alert(`User '${newRecipient}' is not available. Please select an active user.`);
                 }
             })
             .catch(err => console.error("Error fetching users:", err));
@@ -97,18 +109,44 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Please select a message first!");
             return;
         }
-
+    
+        // Show a loading indicator
+        let originalButtonText = document.getElementById("forwardBtn").innerText;
+        document.getElementById("forwardBtn").innerText = "Forwarding...";
+        document.getElementById("forwardBtn").disabled = true;
+    
         fetch("http://127.0.0.1:5001/re-encrypt-message", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sender: username, original_receiver: selectedUser, new_receiver: newRecipient, message_id: selectedMessageId })
+            body: JSON.stringify({ 
+                sender: username, 
+                original_receiver: selectedUser, 
+                new_receiver: newRecipient, 
+                message_id: selectedMessageId 
+            })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            return response.json();
+        })
         .then(result => {
-            alert(result.status);
-            fetchMessages();
+            alert(`Message forwarded to ${newRecipient}`);
+            selectedMessageId = null;
+            document.querySelectorAll(".chat-message").forEach(msg => 
+                msg.classList.remove("selected-message"));
+            document.getElementById("forwardBtn").style.display = "none";
         })
-        .catch(err => console.error("Error forwarding message:", err));
+        .catch(err => {
+            console.error("Error forwarding message:", err);
+            alert("Error forwarding message: " + err.message);
+        })
+        .finally(() => {
+            // Reset the button
+            document.getElementById("forwardBtn").innerText = originalButtonText;
+            document.getElementById("forwardBtn").disabled = false;
+        });
     }
 
     sendBtn.addEventListener("click", function () {

@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // Add this inside the DOMContentLoaded event listener
+document.getElementById("forwardBtn").addEventListener("click", function() {
+    showForwardOptions();
+});
+
     const username = localStorage.getItem("username");
     const usersList = document.getElementById("active-users");
     const chatBox = document.getElementById("chatBox");
@@ -67,6 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(err => console.error("Error loading messages:", err));
     }
 
+
     function selectMessage(messageId, messageElement) {
         document.querySelectorAll(".chat-message").forEach(msg => msg.classList.remove("selected-message"));
         messageElement.classList.add("selected-message");
@@ -75,10 +81,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function showForwardOptions() {
+        // Show a loading state
+        const forwardBtn = document.getElementById("forwardBtn");
+        forwardBtn.innerText = "Loading users...";
+        forwardBtn.disabled = true;
+        
         fetch("http://127.0.0.1:5000/active-users")
             .then(response => response.json())
             .then(users => {
-                // Filter out the current user and the current chat partner
+                // Reset button state
+                forwardBtn.innerText = "🔄 Forward";
+                forwardBtn.disabled = false;
+                
+                // Filter out current user and chat partner
                 const eligibleUsers = users.filter(user => 
                     user !== username && user !== selectedUser);
                     
@@ -87,21 +102,92 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
                 
-                let userList = "Select a user to forward the message:\n";
-                eligibleUsers.forEach(user => {
-                    userList += `👉 ${user}\n`;
+                // Create a modal for user selection instead of using prompt
+                const modalHTML = `
+                    <div id="forwardModal" class="forward-modal">
+                        <div class="forward-modal-content">
+                            <span class="close-modal">&times;</span>
+                            <h3>Forward Message</h3>
+                            <p>Select a user to forward this message to:</p>
+                            <ul class="forward-user-list">
+                                ${eligibleUsers.map(user => 
+                                    `<li data-username="${user}">${user}</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal to the DOM
+                const modalContainer = document.createElement("div");
+                modalContainer.innerHTML = modalHTML;
+                document.body.appendChild(modalContainer);
+                
+                // Show the modal
+                const modal = document.getElementById("forwardModal");
+                modal.style.display = "block";
+                
+                // Handle close button
+                const closeBtn = document.querySelector(".close-modal");
+                closeBtn.onclick = function() {
+                    modal.style.display = "none";
+                    document.body.removeChild(modalContainer);
+                };
+                
+                // Handle user selection
+                const userList = document.querySelectorAll(".forward-user-list li");
+                userList.forEach(userItem => {
+                    userItem.onclick = function() {
+                        const newRecipient = this.getAttribute("data-username");
+                        modal.style.display = "none";
+                        document.body.removeChild(modalContainer);
+                        forwardMessage(newRecipient);
+                    };
                 });
-                
-                let newRecipient = prompt(userList);
-                
-                // Validate that the entered user exists and is active
-                if (newRecipient && eligibleUsers.includes(newRecipient)) {
-                    forwardMessage(newRecipient);
-                } else if (newRecipient) {
-                    alert(`User '${newRecipient}' is not available. Please select an active user.`);
-                }
             })
-            .catch(err => console.error("Error fetching users:", err));
+            .catch(err => {
+                console.error("Error fetching users:", err);
+                forwardBtn.innerText = "🔄 Forward";
+                forwardBtn.disabled = false;
+                alert("Error loading users. Please try again.");
+            });
+    }
+
+    // This function would be added to display forwarded messages differently
+    function appendMessage(msg) {
+        let messageElement = document.createElement("p");
+        messageElement.classList.add("chat-message");
+        messageElement.setAttribute("data-message-id", msg.message_id);
+        
+        // Check if the message is forwarded
+        const isForwarded = msg.decrypted_message.startsWith("[Forwarded from");
+        
+        if (isForwarded) {
+            // Extract original sender from forwarded message
+            const originalSender = msg.decrypted_message.match(/\[Forwarded from (.*?)\]/)[1];
+            const actualMessage = msg.decrypted_message.replace(/\[Forwarded from .*?\]/, "").trim();
+            
+            messageElement.innerHTML = `
+                <div class="forwarded-message">
+                    <div class="forwarded-header">
+                        <i class="fas fa-share"></i> Forwarded from <strong>${originalSender}</strong>
+                    </div>
+                    <div class="message-content">
+                        <strong>${msg.sender}:</strong> ${actualMessage || msg.decrypted_message}
+                    </div>
+                    <span class="encrypted-text">(Encrypted: ${msg.encrypted_message})</span>
+                </div>
+            `;
+        } else {
+            messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.decrypted_message} <br>
+                                        <span class="encrypted-text">(Encrypted: ${msg.encrypted_message})</span>`;
+        }
+        
+        messageElement.onclick = function() {
+            selectMessage(msg.message_id, messageElement);
+        };
+
+        chatBox.appendChild(messageElement);
     }
 
     function forwardMessage(newRecipient) {
@@ -175,3 +261,4 @@ document.addEventListener("DOMContentLoaded", function () {
     setInterval(fetchActiveUsers, 5000);
     setInterval(fetchMessages, 3000);
 });
+

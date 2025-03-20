@@ -153,6 +153,7 @@ def get_messages(username):
     return jsonify(chat_history)
 
 # ✅ FIXED: Re-Encrypt Message API (Forwarding) with better error handling
+# Improved re-encrypt-message endpoint in chat.py
 @app.route('/re-encrypt-message', methods=['POST'])
 def reencrypt_message():
     data = request.json
@@ -167,7 +168,7 @@ def reencrypt_message():
         
         # First, fetch the original message details
         cursor.execute("""
-            SELECT encrypted_message, encrypted_aes_key, sender 
+            SELECT encrypted_message, encrypted_aes_key, sender, plaintext_message 
             FROM messages 
             WHERE id=?
         """, (message_id,))
@@ -177,7 +178,7 @@ def reencrypt_message():
             conn.close()
             return jsonify({"error": "Message not found"}), 404
 
-        original_encrypted_message, encrypted_aes_key_str, original_sender = result
+        original_encrypted_message, encrypted_aes_key_str, original_sender, original_plaintext = result
         
         # Check if the user has permission to forward this message
         # They should either be the original sender or the original receiver
@@ -205,13 +206,18 @@ def reencrypt_message():
         new_c1, new_c2 = re_encrypt_aes_key(c1, c2, re_key)
         new_encrypted_aes_key_str = encrypted_aes_key_to_str(new_c1, new_c2)
         
+        # Prepare the forwarded message text
+        # Check if this is already a forwarded message
+        if original_plaintext and original_plaintext.startswith("[Forwarded from"):
+            forwarded_plaintext = original_plaintext  # Keep the original forwarding info
+        else:
+            forwarded_plaintext = f"[Forwarded from {original_sender}] {original_plaintext}"
+        
         # Create a new message rather than updating the existing one
-        # This preserves the original message for the original recipient
         cursor.execute("""
             INSERT INTO messages (sender, receiver, encrypted_message, encrypted_aes_key, plaintext_message) 
             VALUES (?, ?, ?, ?, ?)
-        """, (sender, new_receiver, original_encrypted_message, new_encrypted_aes_key_str, 
-              f"[Forwarded from {original_sender}]"))
+        """, (sender, new_receiver, original_encrypted_message, new_encrypted_aes_key_str, forwarded_plaintext))
         
         conn.commit()
         conn.close()

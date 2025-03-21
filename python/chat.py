@@ -189,35 +189,66 @@ def reencrypt_message():
         # Parse the encrypted AES key
         c1, c2 = str_to_encrypted_aes_key(encrypted_aes_key_str)
         
-        # Use the forwarder's private key to decrypt the AES key
+        # Get the forwarder's private key and the new receiver's public key
         forwarder_sk = int(get_private_key(sender))
+        new_receiver_pk = int(get_public_key(new_receiver))
+        
         if forwarder_sk is None:
             return jsonify({"error": "Forwarder private key not found"}), 404
-            
-        # Get new receiver's public key
-        new_receiver_pk = int(get_public_key(new_receiver))
         if new_receiver_pk is None:
             return jsonify({"error": f"Public key for {new_receiver} not found"}), 404
 
-        # Generate re-encryption key
-        re_key = generate_re_encryption_key(forwarder_sk, new_receiver_pk)
-        
-        # Re-encrypt the AES key for the new recipient
-        new_c1, new_c2 = re_encrypt_aes_key(c1, c2, re_key)
-        new_encrypted_aes_key_str = encrypted_aes_key_to_str(new_c1, new_c2)
+        # FIXED: Different handling based on whether the forwarder is the original sender or receiver
+        if sender == original_sender:
+            # User is forwarding a message they sent
+            # Fetch the plaintext message from the database
+            if original_plaintext:
+                message_to_encrypt = original_plaintext
+            else:
+                cursor.execute("SELECT plaintext_message FROM messages WHERE id=?", (message_id,))
+                plaintext_result = cursor.fetchone()
+                message_to_encrypt = plaintext_result[0] if plaintext_result and plaintext_result[0] else "Unknown message content"
+            
+            # Generate a new AES key for the new message
+            aes_key = generate_aes_key()
+            # Encrypt the message with the new AES key
+            encrypted_message = encrypt_message(message_to_encrypt, aes_key)
+            # Encrypt the AES key with the new receiver's public key
+            new_encrypted_aes_key = encrypt_aes_key(aes_key, new_receiver_pk)
+            new_encrypted_aes_key_str = encrypted_aes_key_to_str(*new_encrypted_aes_key)
+        else:
+            # User is forwarding a message they received
+            # First, decrypt the AES key with forwarder's private key
+            try:
+                aes_key = decrypt_aes_key(c1, c2, forwarder_sk)
+                # Decrypt the message with the AES key to get the plaintext
+                decrypted_message = decrypt_message(original_encrypted_message, aes_key)
+                
+                # Generate a new AES key for the forwarded message
+                new_aes_key = generate_aes_key()
+                # Re-encrypt the message with the new AES key
+                encrypted_message = encrypt_message(decrypted_message, new_aes_key)
+                # Encrypt the new AES key with the new receiver's public key
+                new_encrypted_aes_key = encrypt_aes_key(new_aes_key, new_receiver_pk)
+                new_encrypted_aes_key_str = encrypted_aes_key_to_str(*new_encrypted_aes_key)
+            except Exception as e:
+                print(f"❌ Error decrypting message for forwarding: {e}")
+                return jsonify({"error": "Failed to decrypt the message for forwarding"}), 500
         
         # Prepare the forwarded message text
         # Check if this is already a forwarded message
         if original_plaintext and original_plaintext.startswith("[Forwarded from"):
             forwarded_plaintext = original_plaintext  # Keep the original forwarding info
         else:
-            forwarded_plaintext = f"[Forwarded from {original_sender}] {original_plaintext}"
+            original_source = original_sender if sender != original_sender else sender
+            forwarded_plaintext = f"[Forwarded from {original_source}] {decrypted_message if 'decrypted_message' in locals() else message_to_encrypt}"
         
         # Create a new message rather than updating the existing one
         cursor.execute("""
             INSERT INTO messages (sender, receiver, encrypted_message, encrypted_aes_key, plaintext_message) 
             VALUES (?, ?, ?, ?, ?)
-        """, (sender, new_receiver, original_encrypted_message, new_encrypted_aes_key_str, forwarded_plaintext))
+        """, (sender, new_receiver, encrypted_message if 'encrypted_message' in locals() else original_encrypted_message, 
+               new_encrypted_aes_key_str, forwarded_plaintext))
         
         conn.commit()
         conn.close()
